@@ -11,6 +11,7 @@ namespace eZ\Publish\Core\MVC\Symfony\Templating;
 use eZ\Publish\API\Repository\Values\Content\Content;
 use eZ\Publish\API\Repository\Values\Content\Field;
 use eZ\Publish\API\Repository\Values\ContentType\FieldDefinition;
+use eZ\Publish\SPI\Comparison\ComparisonResult;
 
 /**
  * Interface for content fields/fieldDefinitions renderers.
@@ -61,4 +62,6 @@ interface FieldBlockRendererInterface
      * @return string
      */
     public function renderFieldDefinitionEdit(FieldDefinition $fieldDefinition, array $params = []);
+
+    public function renderContentFieldComparison(FieldDefinition $fieldDefinition, ComparisonResult $comparisonResult, array $params = []);
 }

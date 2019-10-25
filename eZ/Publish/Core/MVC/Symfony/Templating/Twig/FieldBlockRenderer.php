@@ -10,8 +10,10 @@ namespace eZ\Publish\Core\MVC\Symfony\Templating\Twig;
 
 use eZ\Publish\API\Repository\Values\Content\Field;
 use eZ\Publish\API\Repository\Values\ContentType\FieldDefinition;
+use eZ\Publish\Core\MVC\ConfigResolverInterface;
 use eZ\Publish\Core\MVC\Symfony\Templating\Exception\MissingFieldBlockException;
 use eZ\Publish\Core\MVC\Symfony\Templating\FieldBlockRendererInterface;
+use eZ\Publish\SPI\Comparison\ComparisonResult;
 use Twig\Environment;
 use Twig\Template;
 
@@ -24,6 +26,7 @@ class FieldBlockRenderer implements FieldBlockRendererInterface
     const FIELD_EDIT_SUFFIX = '_field_edit';
     const FIELD_DEFINITION_VIEW_SUFFIX = '_settings';
     const FIELD_DEFINITION_EDIT_SUFFIX = '_field_definition_edit';
+    protected const FIELD_COMPARISON_SUFFIX = '_field_comparison';
 
     /** @var \Twig\Environment */
     private $twig;
@@ -78,6 +81,12 @@ class FieldBlockRenderer implements FieldBlockRendererInterface
      */
     private $blocks = [];
 
+    /** @var array */
+    private $fieldComparisonResources;
+
+    /** @var \eZ\Publish\Core\MVC\ConfigResolverInterface */
+    private $configResolver;
+
     /**
      * @param \Twig\Environment $twig
      */
@@ -130,6 +139,17 @@ class FieldBlockRenderer implements FieldBlockRendererInterface
         usort($this->fieldDefinitionEditResources, [$this, 'sortResourcesCallback']);
     }
 
+    public function setFieldComparisonResources(string $fieldComparisonResourcesParameter): void
+    {
+        $this->fieldComparisonResources = $this->configResolver->getParameter($fieldComparisonResourcesParameter);
+        usort($this->fieldComparisonResources, [$this, 'sortResourcesCallback']);
+    }
+
+    public function setConfigResolver(ConfigResolverInterface $configResolver): void
+    {
+        $this->configResolver = $configResolver;
+    }
+
     public function sortResourcesCallback(array $a, array $b)
     {
         return $b['priority'] - $a['priority'];
@@ -143,6 +163,41 @@ class FieldBlockRenderer implements FieldBlockRendererInterface
     public function renderContentFieldEdit(Field $field, $fieldTypeIdentifier, array $params = [])
     {
         return $this->renderContentField($field, $fieldTypeIdentifier, $params, self::EDIT);
+    }
+
+    public function renderContentFieldComparison(FieldDefinition $fieldDefinition, ComparisonResult $comparisonResult, array $params = [])
+    {
+        $localTemplate = null;
+        if (isset($params['template'])) {
+            // local override of the template
+            // this template is put on the top the templates stack
+            $localTemplate = $params['template'];
+            unset($params['template']);
+        }
+        $params += ['comparison_result' => $comparisonResult];
+
+        if (is_string($this->baseTemplate)) {
+            $this->baseTemplate = $this->twig->loadTemplate($this->baseTemplate);
+        }
+
+        $blockName = $fieldDefinition->fieldTypeIdentifier . self::FIELD_COMPARISON_SUFFIX;
+
+        if (!$localTemplate instanceof Template && $localTemplate !== null) {
+            $localTemplate = $this->twig->loadTemplate($localTemplate);
+        }
+        $context = $this->twig->mergeGlobals($params);
+
+        if ($localTemplate) {
+            $blocks = [$blockName => $this->searchBlock($blockName, $localTemplate)];
+        } else {
+            $blocks = $this->getBlockByName($blockName, 'fieldComparisonResources');
+        }
+
+        if (!$this->baseTemplate->hasBlock($blockName, $context, $blocks)) {
+            return '';
+        }
+
+        return $this->baseTemplate->renderBlock($blockName, $context, $blocks);
     }
 
     /**

@@ -137,6 +137,8 @@ parameters:
     # Templates for FieldDefinition edition. Follows the same structure than for field_templates
     ezsettings.default.fielddefinition_edit_templates: []
 
+    ezsettings.default.field_comparison_templates: []
+
     # Security settings
     ezsettings.default.security.login_template: "@@EzPublishCore/Security/login.html.twig"
     ezsettings.default.security.base_layout: "%ezsettings.default.page_layout%"

@@ -161,11 +161,13 @@ services:
         class: "%ezpublish.templating.field_block_renderer.twig.class%"
         calls:
             - [setTwig, ["@twig"]]
+            - [setConfigResolver, ['@ezpublish.config.resolver']]
             - [setBaseTemplate, ["%ezpublish.content_view.viewbase_layout%"]]
             - [setFieldViewResources, ["$field_templates$"]]
             - [setFieldEditResources, ["$field_edit_templates$"]]
             - [setFieldDefinitionViewResources, ["$fielddefinition_settings_templates$"]]
             - [setFieldDefinitionEditResources, ["$fielddefinition_edit_templates$"]]
+            - [setFieldComparisonResources, ['field_comparison_templates']]
         lazy: true
 
     ezpublish.templating.field_block_renderer:
@@ -177,6 +179,12 @@ services:
             - "@ezpublish.templating.field_block_renderer"
             - "@ezpublish.fieldType.parameterProviderRegistry"
             - "@ezpublish.translation_helper"
+        tags:
+            - { name: twig.extension }
+
+    eZ\Publish\Core\MVC\Symfony\Templating\Twig\Extension\ComparisonResultRenderingExtension:
+        arguments:
+            - '@ezpublish.templating.field_block_renderer'
         tags:
             - { name: twig.extension }
 
